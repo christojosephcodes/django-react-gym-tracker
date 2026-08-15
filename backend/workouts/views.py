@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
-from django.db.models import Max, Count, Sum
+from django.db.models import Max
 from .models import WorkoutSession, Exercise
 from .serializers import RegisterSerializer, UserSerializer, WorkoutSessionSerializer
 
@@ -24,6 +24,13 @@ class RegisterView(generics.CreateAPIView):
         }, status=status.HTTP_201_CREATED)
 
 class WorkoutSessionListCreateView(generics.ListCreateAPIView):
+    serializer_class = WorkoutSessionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return WorkoutSession.objects.filter(owner=self.request.user).prefetch_related('exercises')
+
+class WorkoutSessionDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = WorkoutSessionSerializer
     permission_classes = [IsAuthenticated]
 

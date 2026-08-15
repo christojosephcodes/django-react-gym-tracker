@@ -43,3 +43,16 @@ class WorkoutSessionSerializer(serializers.ModelSerializer):
         for exercise_data in exercises_data:
             Exercise.objects.create(session=session, **exercise_data)
         return session
+
+    def update(self, instance, validated_data):
+        exercises_data = validated_data.pop('exercises', None)
+        instance.date = validated_data.get('date', instance.date)
+        instance.notes = validated_data.get('notes', instance.notes)
+        instance.save()
+
+        if exercises_data is not None:
+            instance.exercises.all().delete()
+            for exercise_data in exercises_data:
+                Exercise.objects.create(session=instance, **exercise_data)
+
+        return instance
