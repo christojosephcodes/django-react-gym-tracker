@@ -1,45 +1,50 @@
 from rest_framework import serializers
-from django.db import transaction
-from .models import WorkoutSession, Exercise
+from django.contrib.auth.models import User
+from .models import Exercise, WorkoutSession, WorkoutSet
 
-class ExerciseSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(required=False)
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email')
+
+class RegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
 
     class Meta:
-        model = Exercise
-        fields = ['id', 'name', 'sets', 'reps', 'weight']
+        model = User
+        fields = ('id', 'username', 'email', 'password')
 
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data.get('email', ''),
+            password=validated_data['password']
+        )
+        return user
+
+class ExerciseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Exercise
+        fields = '__all__'
+
+class WorkoutSetSerializer(serializers.ModelSerializer):
+    exercise_name = serializers.CharField(source='exercise.name', read_only=True)
+
+    class Meta:
+        model = WorkoutSet
+        fields = ('id', 'exercise', 'exercise_name', 'set_number', 'reps', 'weight')
 
 class WorkoutSessionSerializer(serializers.ModelSerializer):
-    exercises = ExerciseSerializer(many=True)
+    sets = WorkoutSetSerializer(many=True, required=False)
 
     class Meta:
         model = WorkoutSession
-        fields = ['id', 'date', 'notes', 'exercises', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = ('id', 'user', 'date', 'title', 'notes', 'sets')
+        read_only_fields = ('user', 'date')
 
-    @transaction.atomic
     def create(self, validated_data):
-        exercises_data = validated_data.pop('exercises', [])
-        user = self.context['request'].user
-        session = WorkoutSession.objects.create(owner=user, **validated_data)
-
-        for ex in exercises_data:
-            Exercise.objects.create(session=session, **ex)
-
+        sets_data = validated_data.pop('sets', [])
+        session = WorkoutSession.objects.create(**validated_data)
+        for set_data in sets_data:
+            WorkoutSet.objects.create(session=session, **set_data)
         return session
-
-    @transaction.atomic
-    def update(self, instance, validated_data):
-        exercises_data = validated_data.pop('exercises', None)
-        instance.date = validated_data.get('date', instance.date)
-        instance.notes = validated_data.get('notes', instance.notes)
-        instance.save()
-
-        if exercises_data is not None:
-            instance.exercises.all().delete()
-            for ex in exercises_data:
-                ex.pop('id', None)
-                Exercise.objects.create(session=instance, **ex)
-
-        return instance
