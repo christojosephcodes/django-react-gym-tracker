@@ -4,14 +4,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
-from django.db.models import Max
-from .models import Exercise, WorkoutSession, WorkoutSet
-from .serializers import (
-    RegisterSerializer,
-    UserSerializer,
-    ExerciseSerializer,
-    WorkoutSessionSerializer,
-)
+from django.db.models import Max, Count, Sum
+from .models import WorkoutSession, Exercise
+from .serializers import RegisterSerializer, UserSerializer, WorkoutSessionSerializer
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -28,29 +23,30 @@ class RegisterView(generics.CreateAPIView):
             "user": UserSerializer(user).data
         }, status=status.HTTP_201_CREATED)
 
-class ExerciseListCreateView(generics.ListCreateAPIView):
-    queryset = Exercise.objects.all()
-    serializer_class = ExerciseSerializer
-    permission_classes = [IsAuthenticated]
-
 class WorkoutSessionListCreateView(generics.ListCreateAPIView):
     serializer_class = WorkoutSessionSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return WorkoutSession.objects.filter(user=self.request.user).prefetch_related('sets__exercise')
+        return WorkoutSession.objects.filter(owner=self.request.user).prefetch_related('exercises')
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-class PersonalRecordsView(APIView):
+class SummaryStatsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        records = (
-            WorkoutSet.objects.filter(session__user=request.user)
-            .values('exercise__name')
+        user_sessions = WorkoutSession.objects.filter(owner=request.user)
+        total_workouts = user_sessions.count()
+        total_exercises = Exercise.objects.filter(session__owner=request.user).count()
+        
+        pr_records = (
+            Exercise.objects.filter(session__owner=request.user)
+            .values('name')
             .annotate(max_weight=Max('weight'))
             .order_by('-max_weight')
         )
-        return Response(records)
+        
+        return Response({
+            "total_workouts": total_workouts,
+            "total_exercises": total_exercises,
+            "personal_records": pr_records,
+        })
