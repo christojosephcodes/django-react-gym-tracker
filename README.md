@@ -1,34 +1,41 @@
-# ??? Full-Stack Gym / Workout Logger
+# 🏋️ Full-Stack Gym / Workout Logger
 
-A full-stack fitness tracker application built with **Django REST Framework** and **React**.
+A modern, full-stack fitness tracker application built with **Django REST Framework** and **React**. It allows users to manage workouts, track nested exercises (sets, reps, and weights), and automatically calculates personal records (PRs) using optimized database queries.
 
-## ?? Features
-- **User Authentication**: Token-based authentication with Login, Sign-up, and Logout.
-- **Nested Writable Serializers**: Log complete workout sessions with dynamic exercise sets, reps, and weights in a single database transaction.
-- **Full CRUD Operations**: Create, view, update/edit, and delete past workout sessions.
-- **SQL Aggregations**: Real-time Personal Records (PR) calculations and total workout metrics.
-- **Isolated User Scope**: Each user only views and modifies their own fitness data.
+---
 
-## ??? Tech Stack
-- **Backend**: Python, Django 5.x, Django REST Framework, SQLite
-- **Frontend**: React, Axios, JavaScript (ES6+)
+## 🚀 Features
 
-## ?? Installation & Setup
+* **User Authentication**: Token-based authentication with Login, Sign-up, and Logout capabilities.
+* **Nested Writable Serializers**: Create and edit workout sessions along with nested exercise rows in a single atomic database transaction.
+* **Full CRUD Functionality**: Create, view, update/edit, and delete past workout sessions seamlessly.
+* **SQL-Level Aggregations**: Real-time Personal Record (PR) tracking calculated directly in SQL via Django ORM (`Max` annotations).
+* **User Isolation**: Secure querysets ensuring users can only view and manipulate their own workout logs.
 
-### 1. Backend Setup
-```bash
-cd backend
-python -m venv venv
-# Windows:
-call venv\Scripts\activate.bat
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
-```
+---
 
-### 2. Frontend Setup
-```bash
-cd frontend
-npm install
-npm start
+## 🛠️ Tech Stack
+
+* **Backend**: Python 3, Django 5.x, Django REST Framework (DRF), SQLite
+* **Frontend**: React, Axios, JavaScript (ES6+), CSS
+
+---
+
+## 📂 Project Structure
+
+```text
+django-react-gym-tracker/
+├── backend/
+│   ├── core/              # Django settings, root URLs, and WSGI/ASGI
+│   ├── workouts/          # Models, Serializers, Views, and URL routing
+│   ├── manage.py
+│   └── requirements.txt
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── api.js         # Axios instance with DRF Token interceptor
+│   │   ├── App.js         # Main UI, Auth screens, Form, and History list
+│   │   └── index.js
+│   └── package.json
+└── .gitignore
 ```
